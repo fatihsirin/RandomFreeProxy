@@ -1,2 +1,4 @@
+requests
 aiohttp
 asyncio
+requests[socks]

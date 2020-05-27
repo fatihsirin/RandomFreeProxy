@@ -188,12 +188,17 @@ async def runner(complete_list):
     return await asyncio.gather(*tasks)
 
 
-data = Scrapper().getData()
-try:
-    loop = asyncio.get_event_loop()
-    # loop.run
-    result = loop.run_until_complete(runner(data))
-    print(result)
-finally:
-    loop.close()
+# data = Scrapper().getData()
+# try:
+#     loop = asyncio.get_event_loop()
+#     # loop.run
+#     result = loop.run_until_complete(runner(data))
+#     print(result)
+# finally:
+#     loop.close()
 # return result
+
+import checker
+data = Scrapper().getData()
+x = checker.Main(proxylist=data, checktype="socks5")
+print("ddddddd")
