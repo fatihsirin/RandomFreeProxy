@@ -84,7 +84,7 @@ class Scrapper:
 
     def regProxy(self):
         # pattern_proxy = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]):[0-9]+$"
-        pattern_proxy = r"([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]{2,4})"
+        pattern_proxy = r"([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]{2,5})"
         compiledReg = re.compile(pattern_proxy, re.MULTILINE)
         return compiledReg
 
@@ -132,10 +132,12 @@ class Scrapper:
 
 
 TIMEOUT = 30
-# CHECK_URLS = ['https://ifconfig.co/ip']
+
 
 CHECK_URLS = (
-    ('ifconfig', 'https://ifconfig.co/ip'),
+    ('ifconfigco', 'https://ifconfig.co/ip'),
+    ('ifconfigme', 'http://ifconfig.me/ip'),
+    ('ipinfo', 'http://ipinfo.io/ip'),
 )
 
 
@@ -155,7 +157,9 @@ async def check_proxy(proxy):
                 status_code = 404
                 total_time = None
                 error_msg = 'no'
+                await asyncio.sleep(5)
                 async with session.get(url, proxy='http://{}:{}'.format(ip, port)) as resp:
+                    await asyncio.sleep(5)
                     status_code = resp.status
                     await resp.text()
                     end = time.time()
@@ -170,10 +174,12 @@ async def check_proxy(proxy):
             status_code = 503
             error_msg = 'unknown error: {}.'.format(e)
         finally:
+            await asyncio.sleep(5)
             result[website_name + '_status'] = status_code
             result[website_name + '_error'] = error_msg
             result[website_name + '_total_time'] = total_time
-    print(result)
+            print(result)
+
     return result
 
 
@@ -185,7 +191,9 @@ async def runner(complete_list):
 data = Scrapper().getData()
 try:
     loop = asyncio.get_event_loop()
+    # loop.run
     result = loop.run_until_complete(runner(data))
+    print(result)
 finally:
     loop.close()
 # return result
