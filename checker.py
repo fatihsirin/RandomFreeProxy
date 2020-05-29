@@ -5,15 +5,15 @@ from queue import Queue
 from threading import Thread
 from time import sleep
 
-from requests import ConnectionError, get
+from requests import ConnectionError, get, exceptions
 from urllib3.connectionpool import SocketError, SSLError, MaxRetryError, ProxyError
 
-# #checks socks dependencies is exists
-# try:
-#     from urllib3.contrib.socks import SOCKSProxyManager
-#     #import requests.packages.urllib3.util.connection as requests_connection
-# except ImportError:
-#     raise exceptions.InvalidSchema ("Missing dependencies for SOCKS support.")
+#checks socks dependencies is exists
+try:
+    from urllib3.contrib.socks import SOCKSProxyManager
+    #import requests.packages.urllib3.util.connection as requests_connection
+except ImportError:
+    raise exceptions.InvalidSchema ("Missing dependencies for SOCKS support.")
 
 default_values = '''checker:
   # Check if current version of CheckX is latest  
@@ -79,10 +79,10 @@ class proxyChecker():
                       f'Dead proxies: {self.dead}\n')
                 break
         print("done baby ------------")
-        for i in self.proxylist:
-            print(i)
+        # for i in self.proxylist:
+        #     print(i)
         self.join()
-        print("done baby ------------")
+        print("[+] Worked Success")
 
     def join(self, timeout=None):
         """ Stop the thread. """
@@ -125,12 +125,15 @@ class proxyChecker():
             }
         try:
             r = get(url=self.proxyjudge, proxies=proxy_dict, timeout=10).text
-            if r.__contains__(self.myip):
-                self.trasp += 1
-                self.savetrans.put(proxy)
-            else:
-                self.live += 1
-                self.savelive.put(proxy)
+            self.live += 1
+            self.savelive.put(proxy)
+            # disabled to get trans in another array,
+            # if r.__contains__(self.myip):
+            #     self.trasp += 1
+            #     self.savetrans.put(proxy)
+            # else:
+            #     self.live += 1
+            #     self.savelive.put(proxy)
         except (ConnectionError, SocketError, SSLError, MaxRetryError, ProxyError):
             self.dead += 1
             self.savedead.put(proxy)

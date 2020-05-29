@@ -2,11 +2,38 @@ import os
 import re
 import time
 from datetime import datetime
-
 import requests
-
 from checker import proxyChecker
 
+
+ExpireTime = 200 #in minutes
+directorypath = "./ProxyData/"
+file_ips = 'IpList.txt'
+success_ips = 'Success.txt'
+failed_ips = 'Failed.txt'
+
+
+def WriteFile(filename, data):
+    if not os.path.exists(directorypath):
+        os.makedirs(directorypath)
+    with open(directorypath + filename, 'w') as f:
+        f.writelines("%s\n" % l for l in data)
+
+
+def ReadFile(filename):
+    if not os.path.exists(directorypath):
+        return False
+    else:
+        with open(directorypath + filename, 'r') as f:
+            readed_data = f.read().splitlines()
+            return readed_data
+
+def LastModifTimeDifFile(file):
+    lastmodif = datetime.strptime(time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y")
+    now = datetime.strptime(time.ctime(), "%a %b %d %H:%M:%S %Y")
+    dif = int((now - lastmodif).total_seconds() / 60.0)
+    print('time dif', str(dif))
+    return dif
 
 class Scrapper:
     """
@@ -22,27 +49,24 @@ class Scrapper:
         # init with Empty Proxy List
         self.proxies = []
         self.sources = None
-        self.directorypath = "./ProxyData/"
-        self.file_ips = 'IpList.txt'
-        self.success_ips = 'Success.txt'
-        self.failed_ips = 'Failed.txt'
+
         self.proxy_checker = None
 
     def init(self):
         print('[+]started')
-        if not os.path.exists(self.directorypath + self.file_ips):
+        if not os.path.exists(directorypath + file_ips):
             self.sources = self.DataUrls()
             data = self.GetData(urls=self.sources)
-            self.WriteFile(filename=self.file_ips, data=data)
+            WriteFile(filename=self.file_ips, data=data)
             return data
         else:
-            if self.LastModifTimeDifFile(self.directorypath + self.file_ips) > 60:
+            if LastModifTimeDifFile(directorypath + file_ips) > ExpireTime:
                 self.sources = self.DataUrls()
                 data = self.GetData(urls=self.sources)
-                self.WriteFile(filename=self.file_ips, data=data)
+                WriteFile(filename=file_ips, data=data)
                 return data
             else:
-                data = self.ReadFile(filename=self.file_ips)
+                data = ReadFile(filename=file_ips)
                 return data
         print('[+]done')
 
@@ -73,27 +97,6 @@ class Scrapper:
     def pprint(self):
         print(self.sources)
 
-    def WriteFile(self, filename, data):
-        if not os.path.exists(self.directorypath):
-            os.makedirs(self.directorypath)
-        with open(self.directorypath + filename, 'w') as f:
-            f.writelines("%s\n" % l for l in data)
-
-    def ReadFile(self, filename):
-        if not os.path.exists(self.directorypath):
-            return False
-        else:
-            with open(self.directorypath + filename, 'r') as f:
-                readed_data = f.read().splitlines()
-                return readed_data
-
-    def LastModifTimeDifFile(self, file):
-        lastmodif = datetime.strptime(time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y")
-        now = datetime.strptime(time.ctime(), "%a %b %d %H:%M:%S %Y")
-        dif = int((now - lastmodif).total_seconds() / 60.0)
-        print('time dif', str(dif))
-        return dif
-
     def GetData(self, urls):
         IpList = []
         proxyFinder = self.RegProxy()
@@ -120,16 +123,33 @@ class Scrapper:
         IpList = list(dict.fromkeys(IpList))
         return IpList
 
+
     @staticmethod
     def data_checker(proxy_types, proxy_list):
         ##########################################
+        writable_format = []
+        lives = {}
         for type in proxy_types:
-            x = proxyChecker(proxylist=proxy_list, checktype=type)
+            result = proxyChecker(proxylist=proxy_list, checktype=type)
             # listLive, listDead = _tempcheck.get
-            print(x.listLive)
-            print('wait and check')
+            lives[type] = result.listLive
+            for item in lives[type]:
+                writable_format.append("%s-%s" % (item, type))
+        WriteFile(filename=success_ips,data=writable_format)
+        return lives
+
+    @staticmethod
+    def get_successed():
+        lives={}
+        file = ReadFile(filename=success_ips)
+        for item in file:
+            ip,type = item.split("-")
+            lives[type].append(ip)
+        return lives
 
 
-proxy_types = ['http', "https", "socks4", "socks5"]
+
+proxy_types = ["https", "socks4", "socks5"]
 x = Scrapper().init()
 Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
+x = Scrapper.get_successed()
