@@ -1,23 +1,20 @@
-from ctypes import windll
+# from ctypes import windll
+import threading
 from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
 from threading import Thread
 from time import sleep
-import threading
 
-from colorama import Fore, init
-from requests import ConnectionError, get , exceptions
+from requests import ConnectionError, get
 from urllib3.connectionpool import SocketError, SSLError, MaxRetryError, ProxyError
 
+# #checks socks dependencies is exists
+# try:
+#     from urllib3.contrib.socks import SOCKSProxyManager
+#     #import requests.packages.urllib3.util.connection as requests_connection
+# except ImportError:
+#     raise exceptions.InvalidSchema ("Missing dependencies for SOCKS support.")
 
-#checks socks dependencies is exists
-try:
-    from urllib3.contrib.socks import SOCKSProxyManager
-    #import requests.packages.urllib3.util.connection as requests_connection
-except ImportError:
-    raise exceptions.InvalidSchema ("Missing dependencies for SOCKS support.")
-
-init()
 default_values = '''checker:
   # Check if current version of CheckX is latest  
   check_for_updates: true
@@ -34,17 +31,20 @@ default_values = '''checker:
   debugging: false
 '''
 
-class Main():
+
+class proxyChecker():
     def __init__(self,proxylist,checktype):
+        # if self.checktype not in ['socks4', 'socks5', 'https', 'http']:
+        #     raise BaseException("Proxy type is unknown, Please enter correct proxy type (SOCKS4, SOCKS5, HTTPS):")
         self.dead = 0
         self.live = 0
         self.cpm = 0
         self.trasp = 0
-        self.listDead = []
         self.listLive = []
+        self.listDead = []
         self.listTrasp = []
-        self.savedead = Queue()
         self.savelive = Queue()
+        self.savedead = Queue()
         self.savetrans = Queue()
         self.proxylist = proxylist
         self.folder = "./"
@@ -54,12 +54,10 @@ class Main():
         self.threadPoints = []
         self._stopevent = threading.Event()
         self.pool = None
-
-
-        if self.checktype not in ['socks4', 'socks5', 'https', 'http']:
-            raise BaseException("Proxy type is unknown, Please enter correct proxy type (SOCKS4, SOCKS5, HTTPS):")
-
         self.accounts = [x for x in self.proxylist if ':' in x]
+        self.scan()
+
+    def scan(self):
         self.threadPoints.append(Thread(target=self.save_dead,name="a"))
         self.threadPoints.append(Thread(target=self.save_hits,name="b"))
         self.threadPoints.append(Thread(target=self.save_trans,name="c"))
@@ -76,9 +74,9 @@ class Main():
         self.pool.join()
         while True:
             if int(self.savelive.qsize() + self.savedead.qsize() + self.savedead.qsize()) == 0:
-                print(f'\n{Fore.LIGHTGREEN_EX}Live proxies: {self.live}\n'
-                      f'{Fore.LIGHTYELLOW_EX}Transparent proxies: {self.trasp}\n'
-                      f'{Fore.LIGHTRED_EX}Dead proxies: {self.dead}\n')
+                print(f'\nLive proxies: {self.live}\n'
+                      f'Transparent proxies: {self.trasp}\n'
+                      f'Dead proxies: {self.dead}\n')
                 break
         print("done baby ------------")
         for i in self.proxylist:
@@ -139,12 +137,12 @@ class Main():
 
     def tite(self):
         while not self._stopevent.isSet():
-            windll.kernel32.SetConsoleTitleW(
-                f'Live: {self.live}'
-                f' | Dead: {self.dead}'
-                f' | Transparent {self.trasp}'
-                f' | Left: {len(self.accounts) - (self.live + self.dead + self.trasp)}/{len(self.accounts)}'
-                f' | CPM: {self.cpm}')
+            # windll.kernel32.SetConsoleTitleW(
+            #     f'Live: {self.live}'
+            #     f' | Dead: {self.dead}'
+            #     f' | Transparent {self.trasp}'
+            #     f' | Left: {len(self.accounts) - (self.live + self.dead + self.trasp)}/{len(self.accounts)}'
+            #     f' | CPM: {self.cpm}')
             sleep(0.1)
 
     def cpmcounter(self):
@@ -153,5 +151,5 @@ class Main():
                 now = self.live + self.dead
                 self.cpm = (self.live + self.dead - now) * 15
 
-
-
+    def get_results(self):
+        return self.listLive, self.listDead

@@ -1,20 +1,17 @@
-import re
-import time
-import os
-import requests
-from datetime import datetime
 import os
 import re
 import time
 from datetime import datetime
 
 import requests
+
+from checker import proxyChecker
 
 
 class Scrapper:
     """
-        Scrapper class is use to scrape the proxies from various websites.
-        """
+    Scrapper class is use to scrape the proxies from various websites.
+    """
 
     def __init__(self):
         """
@@ -29,6 +26,7 @@ class Scrapper:
         self.file_ips = 'IpList.txt'
         self.success_ips = 'Success.txt'
         self.failed_ips = 'Failed.txt'
+        self.proxy_checker = None
 
     def init(self):
         print('[+]started')
@@ -38,10 +36,11 @@ class Scrapper:
             self.WriteFile(filename=self.file_ips, data=data)
             return data
         else:
-            if self.LastModifTimeDifFile(self.directorypath + self.file_ips) > 120:
+            if self.LastModifTimeDifFile(self.directorypath + self.file_ips) > 60:
                 self.sources = self.DataUrls()
                 data = self.GetData(urls=self.sources)
-                self.WriteFile(data)
+                self.WriteFile(filename=self.file_ips, data=data)
+                return data
             else:
                 data = self.ReadFile(filename=self.file_ips)
                 return data
@@ -85,7 +84,7 @@ class Scrapper:
             return False
         else:
             with open(self.directorypath + filename, 'r') as f:
-                readed_data = f.readlines()
+                readed_data = f.read().splitlines()
                 return readed_data
 
     def LastModifTimeDifFile(self, file):
@@ -121,13 +120,16 @@ class Scrapper:
         IpList = list(dict.fromkeys(IpList))
         return IpList
 
+    @staticmethod
+    def data_checker(proxy_types, proxy_list):
+        ##########################################
+        for type in proxy_types:
+            x = proxyChecker(proxylist=proxy_list, checktype=type)
+            # listLive, listDead = _tempcheck.get
+            print(x.listLive)
+            print('wait and check')
 
-# import checker
-# data = Scrapper().getData()
-# x = checker.Main(proxylist=data, checktype="socks5")
-# print("ddddddd")
 
-
-# seq = ["This is 6th line", "This is 7th line"]
-
-Scrapper().init()
+proxy_types = ['http', "https", "socks4", "socks5"]
+x = Scrapper().init()
+Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
