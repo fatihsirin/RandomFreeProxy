@@ -134,7 +134,7 @@ class Scrapper:
             # listLive, listDead = _tempcheck.get
             lives[type] = result.listLive
             for item in lives[type]:
-                writable_format.append("%s-%s" % (item, type))
+                writable_format.append("{ip}-{type}".format(ip=item,type=type))
         WriteFile(filename=success_ips,data=writable_format)
         return lives
 
@@ -151,5 +151,5 @@ class Scrapper:
 
 proxy_types = ["https", "socks4", "socks5"]
 x = Scrapper().init()
-Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
-x = Scrapper.get_successed()
+data = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
+success = Scrapper.get_successed()

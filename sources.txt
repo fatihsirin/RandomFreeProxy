@@ -17,3 +17,4 @@ https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt
 https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt
 https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt
 http://spys.me/proxy.txt
+https://awmproxy.net/
