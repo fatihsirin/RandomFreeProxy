@@ -214,8 +214,6 @@ class Scrapper:
 
 
 
-
-
 proxy_types = ["https", "socks4", "socks5"]
 x = Scrapper().init()
 # data = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
