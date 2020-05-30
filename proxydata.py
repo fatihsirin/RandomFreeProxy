@@ -6,7 +6,7 @@ import requests
 from checker import proxyChecker
 
 
-ExpireTime = 200 #in minutes
+ExpireTime = 100 #in minutes
 directorypath = "./ProxyData/"
 file_ips = 'IpList.txt'
 success_ips = 'Success.txt'
@@ -57,7 +57,7 @@ class Scrapper:
         if not os.path.exists(directorypath + file_ips):
             self.sources = self.DataUrls()
             data = self.GetData(urls=self.sources)
-            WriteFile(filename=self.file_ips, data=data)
+            WriteFile(filename=file_ips, data=data)
             return data
         else:
             if LastModifTimeDifFile(directorypath + file_ips) > ExpireTime:
@@ -81,7 +81,6 @@ class Scrapper:
         pattern_proxy = r"([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]{2,5})"
         compiledReg = re.compile(pattern_proxy, re.MULTILINE)
         return compiledReg
-
 
     def Extract(self,data, patt):
         result = []
@@ -120,9 +119,74 @@ class Scrapper:
             else:
                 print("[-] Got Problem with " + url)
 
+        IpList = IpList + self.proxynova()
         IpList = list(dict.fromkeys(IpList))
         return IpList
 
+    def proxynova(self):
+        urls = ['https://www.proxynova.com/proxy-server-list/country-bd',
+                'https://www.proxynova.com/proxy-server-list/country-br',
+                'https://www.proxynova.com/proxy-server-list/country-cl',
+                'https://www.proxynova.com/proxy-server-list/country-cn',
+                'https://www.proxynova.com/proxy-server-list/country-co',
+                'https://www.proxynova.com/proxy-server-list/country-fr',
+                'https://www.proxynova.com/proxy-server-list/country-de',
+                'https://www.proxynova.com/proxy-server-list/country-hk',
+                'https://www.proxynova.com/proxy-server-list/country-in',
+                'https://www.proxynova.com/proxy-server-list/country-id',
+                'https://www.proxynova.com/proxy-server-list/country-jp',
+                'https://www.proxynova.com/proxy-server-list/country-ke',
+                'https://www.proxynova.com/proxy-server-list/country-nl',
+                'https://www.proxynova.com/proxy-server-list/country-pl',
+                'https://www.proxynova.com/proxy-server-list/country-ru',
+                'https://www.proxynova.com/proxy-server-list/country-rs',
+                'https://www.proxynova.com/proxy-server-list/country-kr',
+                'https://www.proxynova.com/proxy-server-list/country-tw',
+                'https://www.proxynova.com/proxy-server-list/country-th',
+                'https://www.proxynova.com/proxy-server-list/country-ua',
+                'https://www.proxynova.com/proxy-server-list/country-gb',
+                'https://www.proxynova.com/proxy-server-list/country-us',
+                'https://www.proxynova.com/proxy-server-list/country-ve',
+                'https://www.proxynova.com/proxy-server-list/country-ir',
+                'https://www.proxynova.com/proxy-server-list/country-tr',
+                'https://www.proxynova.com/proxy-server-list/country-na',
+                'https://www.proxynova.com/proxy-server-list/country-mz',
+                'https://www.proxynova.com/proxy-server-list/country-it',
+                'https://www.proxynova.com/proxy-server-list/country-eg',
+                'https://www.proxynova.com/proxy-server-list/country-bg'];
+
+        reg_html = r"<td align(.*)\s(?!.*(<time|<div|<span)\s)(.*)\s(.*)\s(.*)\s(.*)\/td>"
+        reg_port = r'(?!\.)\s([0-9]{2,5})\s(?!\.)'
+        reg_ip = r"((?<=\(\'([\s]{0,}){0})(([0-9]{1,3}\.){3}[0-9]{1,3})(?=([\'\)]{0})))"
+        reg_html = re.compile(reg_html)
+        reg_port = re.compile(reg_port)
+        reg_ip = re.compile(reg_ip)
+        data_list = []
+
+        for url in urls:
+            print("[+] Started to Download: " + url)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
+            }
+            response = requests.get(url, headers=headers)
+            time.sleep(2)
+            statuscode = response.status_code
+            if statuscode == 200:
+                print("[+] Successfully Downloaded")
+                data_htmlip = self.Extract(response.text, reg_html)
+                temp_array = []
+                for i in range(0, len(data_htmlip), 2):
+                    temp_array.append(str(data_htmlip[i]) + str(data_htmlip[i + 1]))
+
+                for iter in temp_array:
+                    data_list.append(str(self.Extract(iter, reg_ip)[0]).rstrip().lstrip()
+                                     + ":" +
+                                     str(self.Extract(iter, reg_port)[0]).rstrip().lstrip()
+                                     )
+                print(data_list)
+            else:
+                print("[-] Got Problem with " + url)
+        return data_list
 
     @staticmethod
     def data_checker(proxy_types, proxy_list):
@@ -140,7 +204,7 @@ class Scrapper:
 
     @staticmethod
     def get_successed():
-        lives={}
+        lives={"https":[],"socks4":[],"socks5":[]}
         file = ReadFile(filename=success_ips)
         for item in file:
             ip,type = item.split("-")
@@ -154,100 +218,88 @@ class Scrapper:
 
 
 
-def Extract(data, patt):
-    result = []
-    while True:
-        m = patt.search(data)
-        if not m:
-            break
-        i = m.group()
-        result.append(m.group())
-        data = data[m.end():]
-    return result
-
-def proxynova():
-    urls = ['https://www.proxynova.com/proxy-server-list/country-bd',
-            'https://www.proxynova.com/proxy-server-list/country-br',
-            'https://www.proxynova.com/proxy-server-list/country-cl',
-            'https://www.proxynova.com/proxy-server-list/country-cn',
-            'https://www.proxynova.com/proxy-server-list/country-co',
-            'https://www.proxynova.com/proxy-server-list/country-fr',
-            'https://www.proxynova.com/proxy-server-list/country-de',
-            'https://www.proxynova.com/proxy-server-list/country-hk',
-            'https://www.proxynova.com/proxy-server-list/country-in',
-            'https://www.proxynova.com/proxy-server-list/country-id',
-            'https://www.proxynova.com/proxy-server-list/country-jp',
-            'https://www.proxynova.com/proxy-server-list/country-ke',
-            'https://www.proxynova.com/proxy-server-list/country-nl',
-            'https://www.proxynova.com/proxy-server-list/country-pl',
-            'https://www.proxynova.com/proxy-server-list/country-ru',
-            'https://www.proxynova.com/proxy-server-list/country-rs',
-            'https://www.proxynova.com/proxy-server-list/country-kr',
-            'https://www.proxynova.com/proxy-server-list/country-tw',
-            'https://www.proxynova.com/proxy-server-list/country-th',
-            'https://www.proxynova.com/proxy-server-list/country-ua',
-            'https://www.proxynova.com/proxy-server-list/country-gb',
-            'https://www.proxynova.com/proxy-server-list/country-us',
-            'https://www.proxynova.com/proxy-server-list/country-ve',
-            'https://www.proxynova.com/proxy-server-list/country-ir',
-            'https://www.proxynova.com/proxy-server-list/country-tr',
-            'https://www.proxynova.com/proxy-server-list/country-na',
-            'https://www.proxynova.com/proxy-server-list/country-mz',
-            'https://www.proxynova.com/proxy-server-list/country-it',
-            'https://www.proxynova.com/proxy-server-list/country-eg',
-            'https://www.proxynova.com/proxy-server-list/country-bg'];
-
-    # reg_all_string = r"<td align(.*)\s(?!.*(<time|<div|<span)\s)(.*)\s(.*)\s(.*)\s(.*)\/td>"
-    reg_htmlIP = r"<td align(.*)\s(?!.*(<time|<div|<span)\s)(.*)\s(.*)\s(.*)\s(.*)\/td>"
-    reg_port = r'(?!\.)\s([0-9]{2,5})\s(?!\.)'
-    reg_ip = r"((?<=\(\'([\s]{0,}){0})(([0-9]{1,3}\.){3}[0-9]{1,3})(?=([\'\)]{0})))"
-    reg_htmlIP = re.compile(reg_htmlIP)
-    reg_port = re.compile(reg_port)
-    reg_ip = re.compile(reg_ip)
-
-
-
-    for url in urls:
-        print("[+] Started to Download: " + url)
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
-        }
-        response = requests.get(url, headers=headers)
-        time.sleep(2)
-        statuscode = response.status_code
-        if statuscode == 200:
-            print("[+] Successfully Downloaded")
-            data_htmlip = Extract(response.text, reg_htmlIP)
-            temp_array=[]
-            for i in range(0, len(data_htmlip), 2):
-                temp_array.append(str(data_htmlip[i]) + str(data_htmlip[i + 1]))
-            # for i in data_htmlIP:
-            #     [a + b for a, b in zip(l, l[1:])[::2]]
-            # data_htmlIP = ' '.join([str(elem) for elem in data_htmlip])
-
-            data_list = []
-            for iter in temp_array:
-                data_list.append(str(Extract(iter, reg_ip)[0]).rstrip() + ":" + str(Extract(iter, reg_port)[0]).rstrip())
-                Extract(iter, reg_ip)
-
-            # data_ip = Extract(data_htmlip, reg_ip)
-            # data_ip = list(map(lambda x: x.strip(), data_ip))[1:]
-            # data_port = Extract(response.text, reg_port)
-            # data_port = list(map(lambda x: x.strip(), data_port))
-            # IpList = IpList + data
-            print(data_list)
-        else:
-            print("[-] Got Problem with " + url)
+# def Extract(data, patt):
+#     result = []
+#     while True:
+#         m = patt.search(data)
+#         if not m:
+#             break
+#         i = m.group()
+#         result.append(m.group())
+#         data = data[m.end():]
+#     return result
+#
+# def proxynova():
+#     urls = ['https://www.proxynova.com/proxy-server-list/country-bd',
+#             'https://www.proxynova.com/proxy-server-list/country-br',
+#             'https://www.proxynova.com/proxy-server-list/country-cl',
+#             'https://www.proxynova.com/proxy-server-list/country-cn',
+#             'https://www.proxynova.com/proxy-server-list/country-co',
+#             'https://www.proxynova.com/proxy-server-list/country-fr',
+#             'https://www.proxynova.com/proxy-server-list/country-de',
+#             'https://www.proxynova.com/proxy-server-list/country-hk',
+#             'https://www.proxynova.com/proxy-server-list/country-in',
+#             'https://www.proxynova.com/proxy-server-list/country-id',
+#             'https://www.proxynova.com/proxy-server-list/country-jp',
+#             'https://www.proxynova.com/proxy-server-list/country-ke',
+#             'https://www.proxynova.com/proxy-server-list/country-nl',
+#             'https://www.proxynova.com/proxy-server-list/country-pl',
+#             'https://www.proxynova.com/proxy-server-list/country-ru',
+#             'https://www.proxynova.com/proxy-server-list/country-rs',
+#             'https://www.proxynova.com/proxy-server-list/country-kr',
+#             'https://www.proxynova.com/proxy-server-list/country-tw',
+#             'https://www.proxynova.com/proxy-server-list/country-th',
+#             'https://www.proxynova.com/proxy-server-list/country-ua',
+#             'https://www.proxynova.com/proxy-server-list/country-gb',
+#             'https://www.proxynova.com/proxy-server-list/country-us',
+#             'https://www.proxynova.com/proxy-server-list/country-ve',
+#             'https://www.proxynova.com/proxy-server-list/country-ir',
+#             'https://www.proxynova.com/proxy-server-list/country-tr',
+#             'https://www.proxynova.com/proxy-server-list/country-na',
+#             'https://www.proxynova.com/proxy-server-list/country-mz',
+#             'https://www.proxynova.com/proxy-server-list/country-it',
+#             'https://www.proxynova.com/proxy-server-list/country-eg',
+#             'https://www.proxynova.com/proxy-server-list/country-bg'];
+#
+#     reg_html = r"<td align(.*)\s(?!.*(<time|<div|<span)\s)(.*)\s(.*)\s(.*)\s(.*)\/td>"
+#     reg_port = r'(?!\.)\s([0-9]{2,5})\s(?!\.)'
+#     reg_ip = r"((?<=\(\'([\s]{0,}){0})(([0-9]{1,3}\.){3}[0-9]{1,3})(?=([\'\)]{0})))"
+#     reg_html = re.compile(reg_html)
+#     reg_port = re.compile(reg_port)
+#     reg_ip = re.compile(reg_ip)
+#     data_list = []
+#
+#     for url in urls:
+#         print("[+] Started to Download: " + url)
+#         headers = {
+#             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
+#         }
+#         response = requests.get(url, headers=headers)
+#         time.sleep(2)
+#         statuscode = response.status_code
+#         if statuscode == 200:
+#             print("[+] Successfully Downloaded")
+#             data_htmlip = Extract(response.text, reg_html)
+#             temp_array=[]
+#             for i in range(0, len(data_htmlip), 2):
+#                 temp_array.append(str(data_htmlip[i]) + str(data_htmlip[i + 1]))
+#
+#
+#             for iter in temp_array:
+#                 data_list.append(str(Extract(iter, reg_ip)[0]).rstrip() + ":" + str(Extract(iter, reg_port)[0]).rstrip())
+#                 Extract(iter, reg_ip)
+#             print(data_list)
+#         else:
+#             print("[-] Got Problem with " + url)
+#
 
 
-
-proxynova()
 
 # def getProxy(type):
 #     pass
 # #
-# proxy_types = ["https", "socks4", "socks5"]
-# x = Scrapper().init()
+proxy_types = ["https", "socks4", "socks5"]
+x = Scrapper().init()
 # data = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
-# success = Scrapper.get_successed()
+success = Scrapper.get_successed()
 #
