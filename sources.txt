@@ -6,6 +6,7 @@ https://free-proxy-list.net/anonymous-proxy.html
 https://free-proxy-list.net/uk-proxy.html
 http://proxydb.net/
 https://proxy-daily.com/
+https://github.com/sunny9577/proxy-scraper/blob/master/proxies.txt
 https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt
 https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/https.txt
 https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/proxy.txt
