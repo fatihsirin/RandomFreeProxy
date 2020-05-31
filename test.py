@@ -3,19 +3,127 @@ import re
 import time
 from datetime import datetime
 import requests
-from checker import proxyChecker
 import random
 import threading
+from multiprocessing.dummy import Pool as ThreadPool
+from queue import Queue
+from threading import Thread
 
+from requests import ConnectionError, get, exceptions
+from urllib3.connectionpool import SocketError, SSLError, MaxRetryError, ProxyError
+
+
+try:  # checks socks dependencies is exists
+    from urllib3.contrib.socks import SOCKSProxyManager
+except ImportError:
+    raise exceptions.InvalidSchema("Missing dependencies for SOCKS support.")
 
 directorypath = "./ProxyData/"
 file_ips = 'IpList.txt'
 success_ips = 'Success.txt'
 failed_ips = 'Failed.txt'
-ip_list = None
+
+ip_list_bytype = {"https": [], "socks4": [], "socks5": []}
+ip_list = []
+
 _stopevent = threading.Event()
 expire_time = 1800  # 60 minutes for expire data
+#######################################################################################################
 
+class proxyChecker():
+    def __init__(self,proxylist, checktype):
+        self.dead = 0
+        self.live = 0
+        self.cpm = 0
+        self.trasp = 0
+        self.listLive = []
+        self.listDead = []
+        self.listTrasp = []
+        self.savelive = Queue()
+        self.savedead = Queue()
+        self.savetrans = Queue()
+        self.proxylist = proxylist
+        self.folder = "./"
+        self.myip = str(get('http://api.ipify.org').text)
+        self.proxyjudge = 'http://ipinfo.io/ip'
+        self.checktype = checktype
+        self.threadPoints = []
+        self._stopevent = threading.Event()
+        self.pool = None
+        self.accounts = [x for x in self.proxylist if ':' in x]
+        self.scan()
+
+    def scan(self):
+        print("starting threads")
+        self.threadPoints.append(Thread(target=self.save_dead,name="save_dead"))
+        self.threadPoints.append(Thread(target=self.save_hits,name="save_hits"))
+        for ths in self.threadPoints:
+            ths.start()
+            # print(ths.getName()+" is: " + str(ths.isAlive()))
+        self.pool = ThreadPool()
+
+        print('\nPlease wait for proxies to finish checking...')
+        self.pool.imap(func=self.check_proxies, iterable=self.accounts)
+        self.pool.close()
+        self.pool.join()
+        while True:
+            if int(self.savelive.qsize() + self.savedead.qsize() + self.savedead.qsize()) == 0:
+                break
+        # print("done baby ------------")
+        # for i in self.proxylist:
+        #     print(i)
+        # self.join()
+        print("[+] Worked Success")
+
+    def join(self, timeout=None):
+        """ Stop the thread. """
+        self._stopevent.set()
+        for ths in self.threadPoints:
+            print("starting to join" + ths.getName())
+            ths.join()
+            print(ths.getName() + " is: " + str(ths.isAlive()))
+
+    def save_dead(self):
+        while not self._stopevent.isSet():
+            while self.savedead.qsize() != 0:
+                self.listDead.append(self.savedead.get())
+
+    def save_hits(self):
+        while not self._stopevent.isSet():
+            while self.savelive.qsize() != 0:
+                self.listLive.append(self.savelive.get())
+                ip_list_bytype[self.checktype].append(self.savelive.get())
+
+    def check_proxies(self, proxy):
+
+        proxy_dict = {}
+        if proxy.count(':') == 3:
+            spl = proxy.split(':')
+            proxy = f'{spl[2]}:{spl[3]}@{spl[0]}:{spl[1]}'
+        if self.checktype == 'http' or self.checktype == 'https':
+            proxy_dict = {
+                'http': f'http://{proxy}',
+                'https': f'https://{proxy}'
+            }
+        elif self.checktype == 'socks4' or self.checktype == 'socks5':
+            proxy_dict = {
+                'http': f'{self.checktype}://{proxy}',
+                'https': f'{self.checktype}://{proxy}'
+            }
+        try:
+            r = get(url=self.proxyjudge, proxies=proxy_dict, timeout=10).text
+            self.live += 1
+            self.savelive.put(proxy)
+        except (ConnectionError, SocketError, SSLError, MaxRetryError, ProxyError):
+            self.dead += 1
+            self.savedead.put(proxy)
+
+    def get_results(self):
+        return self.listLive, self.listDead
+
+
+
+############################################################################################################
 def WriteFile(filename, data):
     if not os.path.exists(directorypath):
         os.makedirs(directorypath)
@@ -31,13 +139,14 @@ def ReadFile(filename):
             return readed_data
 
 def LastModifTimeDifFile(file):
-    if not os.path.exists(directorypath+file):
+    if not os.path.exists(file):
         return False
-    lastmodif = datetime.strptime(time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y")
-    now = datetime.strptime(time.ctime(), "%a %b %d %H:%M:%S %Y")
-    dif = int((now - lastmodif).total_seconds() / 60.0)
-    # print('time dif', str(dif))
-    return dif
+    else:
+        lastmodif = datetime.strptime(time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y")
+        now = datetime.strptime(time.ctime(), "%a %b %d %H:%M:%S %Y")
+        dif = int((now - lastmodif).total_seconds() / 60.0)
+        # print('time dif', str(dif))
+        return dif
 
 class Scrapper:
     """
@@ -195,6 +304,7 @@ class Scrapper:
         lives = {}
         # """creating scan for any types by one by"""
         for type in proxy_types:
+            #t = threading.Thread(target=proxyChecker, kwargs={"proxy_types": proxy_types, "checktype": type})
             result = proxyChecker(proxylist=proxy_list, checktype=type)
             lives[type] = result.listLive
             for item in lives[type]:
@@ -222,13 +332,13 @@ class Scrapper:
 ########################################################################################################################
 
 def get_list(expire_time=1800):
-    global ip_list
+    threads = []
     while not _stopevent.isSet():
         print(time.ctime())
         scrapper = Scrapper(expire_time=expire_time)
         proxy_types = ["https", "socks4", "socks5"]
         data = scrapper.init()
-        ip_list = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=data)
+        Scrapper.data_checker(proxy_types=proxy_types, proxy_list=data)
         time.sleep(expire_time)
 
 def checker_thread(expire_time=1800):
@@ -238,16 +348,19 @@ def close_crawler():
     _stopevent.set()
 
 def get_random_proxy():
-    global ip_list
+    global ip_list_bytype
+    print("$$$$$$$$$$$$")
+    print(ip_list_bytype)
+    print("$$$$$$$$$$$$")
     proxy_dict = None
     success = None
-    if ip_list == None:
+    if not (len(ip_list_bytype["https"]) or len(ip_list_bytype["socks4"]) or len(ip_list_bytype["socks5"])):
         success = Scrapper.get_successed(expire_time)
-    elif success and ip_list:
+    elif success and (len(ip_list_bytype["https"]) or len(ip_list_bytype["socks4"]) or len(ip_list_bytype["socks5"])):
         print("waiting for success proxy output")
         return None
-    elif ip_list:
-        success = ip_list
+    elif (len(ip_list_bytype["https"]) or len(ip_list_bytype["socks4"]) or len(ip_list_bytype["socks5"])) :
+        success = ip_list_bytype
 
     if not success:
         proxy_dict = {
@@ -258,18 +371,24 @@ def get_random_proxy():
         return proxy_dict
     else:
         checktype = random.choice(list(success.keys()))
-        proxy = random.choice(success[checktype])
-        if checktype == 'http' or checktype == 'https':
+        print("checktype ->>>>>" + checktype)
+        if success[checktype]:
+            proxy = random.choice(success[checktype])
+            if checktype == 'http' or checktype == 'https':
+                proxy_dict = {
+                    'http': f'http://{proxy}',
+                    'https': f'https://{proxy}'
+                }
+            elif checktype == 'socks4' or checktype == 'socks5':
+                proxy_dict = {
+                    'http': f'{checktype}://{proxy}',
+                    'https': f'{checktype}://{proxy}'
+                }
+        else:
             proxy_dict = {
-                'http': f'http://{proxy}',
-                'https': f'https://{proxy}'
+                "http": None,
+                "https": None,
             }
-        elif checktype == 'socks4' or checktype == 'socks5':
-            proxy_dict = {
-                'http': f'{checktype}://{proxy}',
-                'https': f'{checktype}://{proxy}'
-            }
-
         return proxy_dict
 
 

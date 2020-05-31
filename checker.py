@@ -2,7 +2,6 @@ import threading
 from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
 from threading import Thread
-from time import sleep
 
 from requests import ConnectionError, get, exceptions
 from urllib3.connectionpool import SocketError, SSLError, MaxRetryError, ProxyError
