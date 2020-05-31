@@ -219,7 +219,6 @@ class Scrapper:
 
 ########################################################################################################################
 
-
 def get_list(expire_time=1800):
     global ip_list
     while not _stopevent.isSet():

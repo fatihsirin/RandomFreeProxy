@@ -1,4 +1,3 @@
-# from ctypes import windll
 import threading
 from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
@@ -12,29 +11,10 @@ from urllib3.connectionpool import SocketError, SSLError, MaxRetryError, ProxyEr
 try:
     from urllib3.contrib.socks import SOCKSProxyManager
 except ImportError:
-    raise exceptions.InvalidSchema ("Missing dependencies for SOCKS support.")
-
-default_values = '''checker:
-  # Check if current version of CheckX is latest  
-  check_for_updates: true
-  # Higher for better accuracy but slower (counted in milliseconds)
-  timeout: 8000
-  # Threads for account checking
-  threads: 200
-  # Proxy types: https | socks4 | socks5
-  proxy_type: 'socks4'
-
-  # Save not working proxies (will take a little longer than normal)
-  save_dead: true
-  # Normal users should keep this false unless problem start happening
-  debugging: false
-'''
-
+    raise exceptions.InvalidSchema("Missing dependencies for SOCKS support.")
 
 class proxyChecker():
-    def __init__(self,proxylist,checktype):
-        # if self.checktype not in ['socks4', 'socks5', 'https', 'http']:
-        #     raise BaseException("Proxy type is unknown, Please enter correct proxy type (SOCKS4, SOCKS5, HTTPS):")
+    def __init__(self,proxylist, checktype):
         self.dead = 0
         self.live = 0
         self.cpm = 0
@@ -60,8 +40,6 @@ class proxyChecker():
         print("starting threads")
         self.threadPoints.append(Thread(target=self.save_dead,name="save_dead"))
         self.threadPoints.append(Thread(target=self.save_hits,name="save_hits"))
-        self.threadPoints.append(Thread(target=self.save_trans,name="save_trans"))
-        # self.threadPoints.append(Thread(target=self.cpmcounter,name="d"))
         self.threadPoints.append(Thread(target=self.tite,name="e"))
         for ths in self.threadPoints:
             ths.start()
@@ -74,9 +52,6 @@ class proxyChecker():
         self.pool.join()
         while True:
             if int(self.savelive.qsize() + self.savedead.qsize() + self.savedead.qsize()) == 0:
-                print(f'\nLive proxies: {self.live}\n'
-                      f'Transparent proxies: {self.trasp}\n'
-                      f'Dead proxies: {self.dead}\n')
                 break
         # print("done baby ------------")
         # for i in self.proxylist:
@@ -102,11 +77,6 @@ class proxyChecker():
             while self.savelive.qsize() != 0:
                 self.listLive.append(self.savelive.get())
 
-    def save_trans(self):
-        while not self._stopevent.isSet():
-            while self.savetrans.qsize() != 0:
-                self.listTrasp.append(self.savetrans.get())
-
     def check_proxies(self, proxy):
 
         proxy_dict = {}
@@ -127,13 +97,6 @@ class proxyChecker():
             r = get(url=self.proxyjudge, proxies=proxy_dict, timeout=10).text
             self.live += 1
             self.savelive.put(proxy)
-            # disabled to get trans in another array,
-            # if r.__contains__(self.myip):
-            #     self.trasp += 1
-            #     self.savetrans.put(proxy)
-            # else:
-            #     self.live += 1
-            #     self.savelive.put(proxy)
         except (ConnectionError, SocketError, SSLError, MaxRetryError, ProxyError):
             self.dead += 1
             self.savedead.put(proxy)
@@ -147,12 +110,6 @@ class proxyChecker():
             #     f' | Left: {len(self.accounts) - (self.live + self.dead + self.trasp)}/{len(self.accounts)}'
             #     f' | CPM: {self.cpm}')
             sleep(0.1)
-
-    def cpmcounter(self):
-        while not self._stopevent.isSet():
-            while (self.live + self.dead) >= 1:
-                now = self.live + self.dead
-                self.cpm = (self.live + self.dead - now) * 15
 
     def get_results(self):
         return self.listLive, self.listDead
