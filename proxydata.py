@@ -14,13 +14,13 @@ success_ips = 'Success.txt'
 failed_ips = 'Failed.txt'
 ip_list = None
 _stopevent = threading.Event()
+expire_time = 1800  # 60 minutes for expire data
 
 def WriteFile(filename, data):
     if not os.path.exists(directorypath):
         os.makedirs(directorypath)
     with open(directorypath + filename, 'w') as f:
         f.writelines("%s\n" % l for l in data)
-
 
 def ReadFile(filename):
     if not os.path.exists(directorypath+filename):
@@ -34,7 +34,7 @@ def LastModifTimeDifFile(file):
     lastmodif = datetime.strptime(time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y")
     now = datetime.strptime(time.ctime(), "%a %b %d %H:%M:%S %Y")
     dif = int((now - lastmodif).total_seconds() / 60.0)
-    print('time dif', str(dif))
+    # print('time dif', str(dif))
     return dif
 
 class Scrapper:
@@ -94,9 +94,6 @@ class Scrapper:
             result.append(m.group())
             data = data[m.end():]
         return result
-
-    def pprint(self):
-        print(self.sources)
 
     def GetData(self, urls):
         IpList = []
@@ -192,12 +189,11 @@ class Scrapper:
 
     @staticmethod
     def data_checker(proxy_types, proxy_list):
-        ##########################################
         writable_format = []
         lives = {}
+        # """creating scan for any types by one by"""
         for type in proxy_types:
             result = proxyChecker(proxylist=proxy_list, checktype=type)
-            # listLive, listDead = _tempcheck.get
             lives[type] = result.listLive
             for item in lives[type]:
                 writable_format.append("{ip}-{type}".format(ip=item,type=type))
@@ -205,14 +201,17 @@ class Scrapper:
         return lives
 
     @staticmethod
-    def get_successed():
+    def get_successed(expiretime):
         lives={"https": [], "socks4": [], "socks5": []}
-        file = ReadFile(filename=success_ips)
-        if file:
-            for item in file:
-                ip, type = item.split("-")
-                lives[type].append(ip)
-            return lives
+        if LastModifTimeDifFile(directorypath+success_ips) < expiretime:
+            file = ReadFile(filename=success_ips)
+            if file:
+                for item in file:
+                    ip, type = item.split("-")
+                    lives[type].append(ip)
+                return lives
+            else:
+                return None
         else:
             return None
 
@@ -224,12 +223,9 @@ def get_list(expire_time=1800):
     while not _stopevent.isSet():
         print(time.ctime())
         scrapper = Scrapper(expire_time=expire_time)
-        # if not _stopevent.isSet():
-        #     threading.Timer(interval=exp_time, function=get_list, args=[exp_time]).start()
         proxy_types = ["https", "socks4", "socks5"]
         data = scrapper.init()
         ip_list = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=data)
-        print("its done :)")
         time.sleep(expire_time)
 
 def checker_thread(expire_time=1800):
@@ -242,11 +238,8 @@ def get_proxy():
     global ip_list
     proxy_dict = None
     success = None
-    print("###")
-    print(ip_list)
-    print("### ")
     if ip_list == None:
-        success = Scrapper.get_successed()
+        success = Scrapper.get_successed(expire_time)
     elif success and ip_list:
         print("waiting for success proxy output")
         return None
@@ -278,8 +271,6 @@ def get_proxy():
 
 
 def main():
-    # t = Thread(target=get_list, name="a")
-    # get_list(300)
     print("starting thread")
     checker_thread()
     print("starting proxy data")
@@ -289,7 +280,6 @@ def main():
         print(get_proxy())
         time.sleep(15)
     pass
-
 
 if __name__ == '__main__':
     main()

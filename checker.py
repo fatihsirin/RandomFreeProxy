@@ -40,7 +40,6 @@ class proxyChecker():
         print("starting threads")
         self.threadPoints.append(Thread(target=self.save_dead,name="save_dead"))
         self.threadPoints.append(Thread(target=self.save_hits,name="save_hits"))
-        self.threadPoints.append(Thread(target=self.tite,name="e"))
         for ths in self.threadPoints:
             ths.start()
             # print(ths.getName()+" is: " + str(ths.isAlive()))
@@ -100,16 +99,6 @@ class proxyChecker():
         except (ConnectionError, SocketError, SSLError, MaxRetryError, ProxyError):
             self.dead += 1
             self.savedead.put(proxy)
-
-    def tite(self):
-        while not self._stopevent.isSet():
-            # windll.kernel32.SetConsoleTitleW(
-            #     f'Live: {self.live}'
-            #     f' | Dead: {self.dead}'
-            #     f' | Transparent {self.trasp}'
-            #     f' | Left: {len(self.accounts) - (self.live + self.dead + self.trasp)}/{len(self.accounts)}'
-            #     f' | CPM: {self.cpm}')
-            sleep(0.1)
 
     def get_results(self):
         return self.listLive, self.listDead
