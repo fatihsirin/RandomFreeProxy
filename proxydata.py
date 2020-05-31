@@ -4,14 +4,16 @@ import time
 from datetime import datetime
 import requests
 from checker import proxyChecker
+import random
+import threading
 
 
-ExpireTime = 100 #in minutes
 directorypath = "./ProxyData/"
 file_ips = 'IpList.txt'
 success_ips = 'Success.txt'
 failed_ips = 'Failed.txt'
-
+ip_list = None
+_stopevent = threading.Event()
 
 def WriteFile(filename, data):
     if not os.path.exists(directorypath):
@@ -21,7 +23,7 @@ def WriteFile(filename, data):
 
 
 def ReadFile(filename):
-    if not os.path.exists(directorypath):
+    if not os.path.exists(directorypath+filename):
         return False
     else:
         with open(directorypath + filename, 'r') as f:
@@ -40,7 +42,7 @@ class Scrapper:
     Scrapper class is use to scrape the proxies from various websites.
     """
 
-    def __init__(self):
+    def __init__(self,expire_time=100):
         """
         Initialization of scrapper class
         :param category: Category of proxy to scrape.
@@ -49,8 +51,8 @@ class Scrapper:
         # init with Empty Proxy List
         self.proxies = []
         self.sources = None
-
-        self.proxy_checker = None
+        self.ExpireTime = expire_time
+        self.proxy_checker = None # in minutes
 
     def init(self):
         print('[+]started')
@@ -60,7 +62,7 @@ class Scrapper:
             WriteFile(filename=file_ips, data=data)
             return data
         else:
-            if LastModifTimeDifFile(directorypath + file_ips) > ExpireTime:
+            if LastModifTimeDifFile(directorypath + file_ips) > self.ExpireTime:
                 self.sources = self.DataUrls()
                 data = self.GetData(urls=self.sources)
                 WriteFile(filename=file_ips, data=data)
@@ -125,34 +127,34 @@ class Scrapper:
 
     def proxynova(self):
         urls = ['https://www.proxynova.com/proxy-server-list/country-bd',
-                'https://www.proxynova.com/proxy-server-list/country-br',
-                'https://www.proxynova.com/proxy-server-list/country-cl',
-                'https://www.proxynova.com/proxy-server-list/country-cn',
-                'https://www.proxynova.com/proxy-server-list/country-co',
-                'https://www.proxynova.com/proxy-server-list/country-fr',
-                'https://www.proxynova.com/proxy-server-list/country-de',
-                'https://www.proxynova.com/proxy-server-list/country-hk',
-                'https://www.proxynova.com/proxy-server-list/country-in',
-                'https://www.proxynova.com/proxy-server-list/country-id',
-                'https://www.proxynova.com/proxy-server-list/country-jp',
-                'https://www.proxynova.com/proxy-server-list/country-ke',
-                'https://www.proxynova.com/proxy-server-list/country-nl',
-                'https://www.proxynova.com/proxy-server-list/country-pl',
-                'https://www.proxynova.com/proxy-server-list/country-ru',
-                'https://www.proxynova.com/proxy-server-list/country-rs',
-                'https://www.proxynova.com/proxy-server-list/country-kr',
-                'https://www.proxynova.com/proxy-server-list/country-tw',
-                'https://www.proxynova.com/proxy-server-list/country-th',
-                'https://www.proxynova.com/proxy-server-list/country-ua',
-                'https://www.proxynova.com/proxy-server-list/country-gb',
-                'https://www.proxynova.com/proxy-server-list/country-us',
-                'https://www.proxynova.com/proxy-server-list/country-ve',
-                'https://www.proxynova.com/proxy-server-list/country-ir',
-                'https://www.proxynova.com/proxy-server-list/country-tr',
-                'https://www.proxynova.com/proxy-server-list/country-na',
-                'https://www.proxynova.com/proxy-server-list/country-mz',
-                'https://www.proxynova.com/proxy-server-list/country-it',
-                'https://www.proxynova.com/proxy-server-list/country-eg',
+                # 'https://www.proxynova.com/proxy-server-list/country-br',
+                # 'https://www.proxynova.com/proxy-server-list/country-cl',
+                # 'https://www.proxynova.com/proxy-server-list/country-cn',
+                # 'https://www.proxynova.com/proxy-server-list/country-co',
+                # 'https://www.proxynova.com/proxy-server-list/country-fr',
+                # 'https://www.proxynova.com/proxy-server-list/country-de',
+                # 'https://www.proxynova.com/proxy-server-list/country-hk',
+                # 'https://www.proxynova.com/proxy-server-list/country-in',
+                # 'https://www.proxynova.com/proxy-server-list/country-id',
+                # 'https://www.proxynova.com/proxy-server-list/country-jp',
+                # 'https://www.proxynova.com/proxy-server-list/country-ke',
+                # 'https://www.proxynova.com/proxy-server-list/country-nl',
+                # 'https://www.proxynova.com/proxy-server-list/country-pl',
+                # 'https://www.proxynova.com/proxy-server-list/country-ru',
+                # 'https://www.proxynova.com/proxy-server-list/country-rs',
+                # 'https://www.proxynova.com/proxy-server-list/country-kr',
+                # 'https://www.proxynova.com/proxy-server-list/country-tw',
+                # 'https://www.proxynova.com/proxy-server-list/country-th',
+                # 'https://www.proxynova.com/proxy-server-list/country-ua',
+                # 'https://www.proxynova.com/proxy-server-list/country-gb',
+                # 'https://www.proxynova.com/proxy-server-list/country-us',
+                # 'https://www.proxynova.com/proxy-server-list/country-ve',
+                # 'https://www.proxynova.com/proxy-server-list/country-ir',
+                # 'https://www.proxynova.com/proxy-server-list/country-tr',
+                # 'https://www.proxynova.com/proxy-server-list/country-na',
+                # 'https://www.proxynova.com/proxy-server-list/country-mz',
+                # 'https://www.proxynova.com/proxy-server-list/country-it',
+                # 'https://www.proxynova.com/proxy-server-list/country-eg',
                 'https://www.proxynova.com/proxy-server-list/country-bg'];
 
         reg_html = r"<td align(.*)\s(?!.*(<time|<div|<span)\s)(.*)\s(.*)\s(.*)\s(.*)\/td>"
@@ -206,16 +208,89 @@ class Scrapper:
     def get_successed():
         lives={"https": [], "socks4": [], "socks5": []}
         file = ReadFile(filename=success_ips)
-        for item in file:
-            ip,type = item.split("-")
-            lives[type].append(ip)
-        return lives
+        if file:
+            for item in file:
+                ip, type = item.split("-")
+                lives[type].append(ip)
+            return lives
+        else:
+            return None
 
 
+########################################################################################################################
 
 
-proxy_types = ["https", "socks4", "socks5"]
-x = Scrapper().init()
-# data = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=x)
-success = Scrapper.get_successed()
-#
+def get_list(expire_time=1800):
+    global ip_list
+    while not _stopevent.isSet():
+        print(time.ctime())
+        scrapper = Scrapper(expire_time=expire_time)
+        # if not _stopevent.isSet():
+        #     threading.Timer(interval=exp_time, function=get_list, args=[exp_time]).start()
+        proxy_types = ["https", "socks4", "socks5"]
+        data = scrapper.init()
+        ip_list = Scrapper.data_checker(proxy_types=proxy_types, proxy_list=data)
+        print("its done :)")
+        time.sleep(expire_time)
+
+def checker_thread(expire_time=1800):
+    threading.Thread(target=get_list, args=[expire_time]).start()
+
+def close_crawler():
+    _stopevent.set()
+
+def get_proxy():
+    global ip_list
+    proxy_dict = None
+    success = None
+    print("###")
+    print(ip_list)
+    print("### ")
+    if ip_list == None:
+        success = Scrapper.get_successed()
+    elif success and ip_list:
+        print("waiting for success proxy output")
+        return None
+    elif ip_list:
+        success = ip_list
+
+    if not success:
+        proxy_dict = {
+            "http": None,
+            "https": None,
+        }
+        print("[-] Proxy is disabled. Waiting for data.")
+        return proxy_dict
+    else:
+        checktype = random.choice(list(success.keys()))
+        proxy = random.choice(success[checktype])
+        if checktype == 'http' or checktype == 'https':
+            proxy_dict = {
+                'http': f'http://{proxy}',
+                'https': f'https://{proxy}'
+            }
+        elif checktype == 'socks4' or checktype == 'socks5':
+            proxy_dict = {
+                'http': f'{checktype}://{proxy}',
+                'https': f'{checktype}://{proxy}'
+            }
+
+        return proxy_dict
+
+
+def main():
+    # t = Thread(target=get_list, name="a")
+    # get_list(300)
+    print("starting thread")
+    checker_thread()
+    print("starting proxy data")
+    print(get_proxy())
+    close_crawler()
+    while True:
+        print(get_proxy())
+        time.sleep(15)
+    pass
+
+
+if __name__ == '__main__':
+    main()

@@ -11,7 +11,6 @@ from urllib3.connectionpool import SocketError, SSLError, MaxRetryError, ProxyEr
 #checks socks dependencies is exists
 try:
     from urllib3.contrib.socks import SOCKSProxyManager
-    #import requests.packages.urllib3.util.connection as requests_connection
 except ImportError:
     raise exceptions.InvalidSchema ("Missing dependencies for SOCKS support.")
 
@@ -58,14 +57,15 @@ class proxyChecker():
         self.scan()
 
     def scan(self):
-        self.threadPoints.append(Thread(target=self.save_dead,name="a"))
-        self.threadPoints.append(Thread(target=self.save_hits,name="b"))
-        self.threadPoints.append(Thread(target=self.save_trans,name="c"))
+        print("starting threads")
+        self.threadPoints.append(Thread(target=self.save_dead,name="save_dead"))
+        self.threadPoints.append(Thread(target=self.save_hits,name="save_hits"))
+        self.threadPoints.append(Thread(target=self.save_trans,name="save_trans"))
         # self.threadPoints.append(Thread(target=self.cpmcounter,name="d"))
         self.threadPoints.append(Thread(target=self.tite,name="e"))
         for ths in self.threadPoints:
             ths.start()
-            print(ths.getName()+" is: " + str(ths.isAlive()))
+            # print(ths.getName()+" is: " + str(ths.isAlive()))
         self.pool = ThreadPool()
 
         print('\nPlease wait for proxies to finish checking...')
@@ -78,10 +78,10 @@ class proxyChecker():
                       f'Transparent proxies: {self.trasp}\n'
                       f'Dead proxies: {self.dead}\n')
                 break
-        print("done baby ------------")
+        # print("done baby ------------")
         # for i in self.proxylist:
         #     print(i)
-        self.join()
+        # self.join()
         print("[+] Worked Success")
 
     def join(self, timeout=None):
