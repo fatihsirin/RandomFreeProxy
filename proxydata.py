@@ -277,6 +277,7 @@ def main():
     print("starting thread")
     checker_thread()
     print("starting proxy data")
+    time.sleep(3)
     print(get_random_proxy())
     close_crawler()
     while True:

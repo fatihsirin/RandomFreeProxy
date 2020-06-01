@@ -24,11 +24,12 @@ success_ips = 'Success.txt'
 failed_ips = 'Failed.txt'
 
 ip_list_bytype = {"https": [], "socks4": [], "socks5": []}
-ip_list = []
+check_status = None  # started == 1 , done == 0
 
 _stopevent = threading.Event()
 expire_time = 1800  # 60 minutes for expire data
 #######################################################################################################
+success_file_data = {"https": [], "socks4": [], "socks5": []}
 
 class proxyChecker():
     def __init__(self,proxylist, checktype):
@@ -121,8 +122,6 @@ class proxyChecker():
     def get_results(self):
         return self.listLive, self.listDead
 
-
-
 ############################################################################################################
 def WriteFile(filename, data):
     if not os.path.exists(directorypath):
@@ -157,7 +156,6 @@ class Scrapper:
         """
         Initialization of scrapper class
         :param category: Category of proxy to scrape.
-        :param print_err_trace: (True or False) are you required the stack trace for error's if they occured in the program
         """
         # init with Empty Proxy List
         self.proxies = []
@@ -165,23 +163,25 @@ class Scrapper:
         self.ExpireTime = expire_time
         self.proxy_checker = None # in minutes
 
+
     def init(self):
+        global success_file_data
+        success_file_data = Scrapper.get_successed(expire_time)
+        data = None
         print('[+]started')
         if not os.path.exists(directorypath + file_ips):
             self.sources = self.DataUrls()
             data = self.GetData(urls=self.sources)
             WriteFile(filename=file_ips, data=data)
-            return data
         else:
             if LastModifTimeDifFile(directorypath + file_ips) > self.ExpireTime:
                 self.sources = self.DataUrls()
                 data = self.GetData(urls=self.sources)
                 WriteFile(filename=file_ips, data=data)
-                return data
             else:
                 data = ReadFile(filename=file_ips)
-                return data
         print('[+]done')
+        return data
 
     def DataUrls(self):
         sources = None
@@ -304,7 +304,6 @@ class Scrapper:
         lives = {}
         # """creating scan for any types by one by"""
         for type in proxy_types:
-            #t = threading.Thread(target=proxyChecker, kwargs={"proxy_types": proxy_types, "checktype": type})
             result = proxyChecker(proxylist=proxy_list, checktype=type)
             lives[type] = result.listLive
             for item in lives[type]:
@@ -328,7 +327,6 @@ class Scrapper:
         else:
             return None
 
-
 ########################################################################################################################
 
 def get_list(expire_time=1800):
@@ -349,17 +347,23 @@ def close_crawler():
 
 def get_random_proxy():
     global ip_list_bytype
-    print("$$$$$$$$$$$$")
-    print(ip_list_bytype)
-    print("$$$$$$$$$$$$")
+
     proxy_dict = None
     success = None
-    if not (len(ip_list_bytype["https"]) or len(ip_list_bytype["socks4"]) or len(ip_list_bytype["socks5"])):
-        success = Scrapper.get_successed(expire_time)
-    elif success and (len(ip_list_bytype["https"]) or len(ip_list_bytype["socks4"]) or len(ip_list_bytype["socks5"])):
+
+    if not (len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"])):
+        # success = Scrapper.get_successed(expire_time)
+        success = {}
+        success["https"] = success_file_data["https"] + ip_list_bytype["https"]
+        success["socks4"] = success_file_data["socks4"] + ip_list_bytype["socks4"]
+        success["socks5"] = success_file_data["socks5"] + ip_list_bytype["socks5"]
+        print("$$$$$$$$$$$$")
+        print(success)
+        print("$$$$$$$$$$$$")
+    elif success and (len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"])):
         print("waiting for success proxy output")
         return None
-    elif (len(ip_list_bytype["https"]) or len(ip_list_bytype["socks4"]) or len(ip_list_bytype["socks5"])) :
+    elif len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"]):
         success = ip_list_bytype
 
     if not success:
@@ -396,6 +400,7 @@ def main():
     print("starting thread")
     checker_thread()
     print("starting proxy data")
+    time.sleep(3)
     print(get_random_proxy())
     close_crawler()
     while True:
