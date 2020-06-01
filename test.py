@@ -347,16 +347,20 @@ def close_crawler():
 
 def get_random_proxy():
     global ip_list_bytype
-
     proxy_dict = None
     success = None
-
     if not (len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"])):
         # success = Scrapper.get_successed(expire_time)
         success = {}
         success["https"] = success_file_data["https"] + ip_list_bytype["https"]
         success["socks4"] = success_file_data["socks4"] + ip_list_bytype["socks4"]
         success["socks5"] = success_file_data["socks5"] + ip_list_bytype["socks5"]
+        writable_format = []
+        for _type in success.keys():
+            for item in success[_type]:
+                writable_format.append("{ip}-{type}".format(ip=item,type=_type))
+        WriteFile(filename=success_ips,data=writable_format)
+
         print("$$$$$$$$$$$$")
         print(success)
         print("$$$$$$$$$$$$")
