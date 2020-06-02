@@ -1,28 +1,17 @@
 import randomfreeproxy
 import time
+import requests
 
-randomfreeproxy.checker_thread(expire_time=180) #initializing and setting expire time of data
-time.sleep(3)
-print(randomfreeproxy.get_random_proxy()) #getting proxy string
+randomfreeproxy.checker_thread(expire_time=1800)
+time.sleep(5)
 randomfreeproxy.close_crawler()
+proxies = {}
 while True:
-    print(randomfreeproxy.get_random_proxy())#getting proxy string
-    time.sleep(4)
+    proxies = randomfreeproxy.get_random_proxy()
+    r = requests.get("http://ipinfo.io/ip", proxies=proxies)
+    print(proxies)
+    if r.status_code == 200:
+        print("Request's IP Address: " + r.text)
+        print("----------")
 
-
-
-
-#
-# ```python
-# import randomfreeproxy
-# import time
-#
-# randomfreeproxy.checker_thread(expire_time=180) #initializing and setting expire time of data
-# time.sleep(3)
-# print(randomfreeproxy.get_random_proxy()) #getting proxy string
-# randomfreeproxy.close_crawler()
-# while True:
-#     print(randomfreeproxy.get_random_proxy())#getting proxy string
-#     time.sleep(1)
-#
-# ```
+    time.sleep(5)

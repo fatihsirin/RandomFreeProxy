@@ -52,6 +52,49 @@ while True:
 ```
 
 
+Testing code
+------------
+
+g
+
+```python
+import randomfreeproxy
+import time
+import requests
+
+randomfreeproxy.checker_thread(expire_time=1800)
+time.sleep(5)
+randomfreeproxy.close_crawler()
+proxies = {}
+while True:
+    proxies = randomfreeproxy.get_random_proxy()
+    r = requests.get("http://ipinfo.io/ip", proxies=proxies)
+    print(proxies)
+    if r.status_code == 200:
+        print("Request's IP Address: " + r.text)
+        print("----------")
+
+    time.sleep(5)
+```
+
+**Output**
+```
+{'http': 'socks4://104.248.63.15:30588', 'https': 'socks4://104.248.63.15:30588'}
+Request's IP Address: 45.129.56.200
+----------
+{'http': 'http://104.248.63.17:30588', 'https': 'https://104.248.63.17:30588'}
+{'http': 'socks5://104.248.63.15:30588', 'https': 'socks5://104.248.63.15:30588'}
+Request's IP Address: 77.247.181.165
+----------
+{'http': 'socks4://212.83.191.173:8128', 'https': 'socks4://212.83.191.173:8128'}
+Request's IP Address: 195.154.182.18
+----------
+{'http': 'socks4://46.28.111.54:1080', 'https': 'socks4://46.28.111.54:1080'}
+Request's IP Address: 46.28.111.54
+----------
+```
+
+
 To Do
 -----
 * logging
