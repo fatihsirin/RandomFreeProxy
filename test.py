@@ -89,7 +89,6 @@ class proxyChecker():
 
     def save_hits(self):
         while not self._stopevent.isSet():
-            # while self.savelive.qsize() != 0:
             while self.savelive.qsize() >= 2:
                 self.listLive.append(self.savelive.get())
                 _temp_live = self.savelive.get()
@@ -367,11 +366,6 @@ def get_random_proxy():
         success["https"] = success_file_data["https"] + ip_list_bytype["https"]
         success["socks4"] = success_file_data["socks4"] + ip_list_bytype["socks4"]
         success["socks5"] = success_file_data["socks5"] + ip_list_bytype["socks5"]
-        writable_format = []
-
-        print("$$$$$$$$$$$$")
-        print(success)
-        print("$$$$$$$$$$$$")
 
     elif success and (len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"])):
         print("waiting for success proxy output")
