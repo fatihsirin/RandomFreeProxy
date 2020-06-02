@@ -40,7 +40,7 @@ while True:
 
 ```
 
-Output
+**Output**
 ```
 {'http': 'http://203.190.33.51:8080', 'https': 'https://203.190.33.51:8080'}
 {'http': 'socks5://81.19.223.180:1080', 'https': 'socks5://81.19.223.180:1080'}
@@ -52,7 +52,8 @@ Output
 ```
 
 
-#To Do
+To Do
+-----
 * logging
 * hidemy.me will be parsed and add as resource <https://hidemy.name/en/proxy-list/?maxtime=1000&anon=64&start=0#list>
 
