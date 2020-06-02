@@ -22,6 +22,7 @@ directorypath = "./ProxyData/"
 file_ips = 'IpList.txt'
 success_ips = 'Success.txt'
 failed_ips = 'Failed.txt'
+temp_success_ips = 'temp_Success.txt'
 
 ip_list_bytype = {"https": [], "socks4": [], "socks5": []}
 check_status = None  # started == 1 , done == 0
@@ -124,8 +125,10 @@ class proxyChecker():
         return self.listLive, self.listDead
 
     def realtime_write(self):
-        writable_format = []
+        time.sleep(30)
         while not self._stopevent.isSet():
+            writable_format = []
+            time.sleep(15)
             for key in ip_list_bytype.keys():
                 for item in ip_list_bytype[key]:
                     writable_format.append("{ip}-{type}".format(ip=item, type=key))
@@ -324,7 +327,7 @@ class Scrapper:
     def get_successed(expiretime):
         lives={"https": [], "socks4": [], "socks5": []}
         mod_time = LastModifTimeDifFile(directorypath+success_ips)
-        if mod_time != False and (mod_time < expiretime):
+        if mod_time < expiretime:
             file = ReadFile(filename=success_ips)
             if file:
                 for item in file:
