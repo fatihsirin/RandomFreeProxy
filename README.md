@@ -55,8 +55,6 @@ while True:
 Testing code
 ------------
 
-g
-
 ```python
 import randomfreeproxy
 import time
