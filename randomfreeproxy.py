@@ -56,7 +56,7 @@ class proxyChecker():
         self.scan()
 
     def scan(self):
-        print("starting threads")
+        # print("starting threads")
         self.threadPoints.append(Thread(target=self.save_dead,name="save_dead"))
         self.threadPoints.append(Thread(target=self.save_hits,name="save_hits"))
         self.threadPoints.append(Thread(target=self.realtime_write, name="realtime_write"))
@@ -65,22 +65,22 @@ class proxyChecker():
             # print(ths.getName()+" is: " + str(ths.isAlive()))
         self.pool = ThreadPool()
 
-        print('\nPlease wait for proxies to finish checking...')
+        # print('\nPlease wait for proxies to finish checking...')
         self.pool.imap(func=self.check_proxies, iterable=self.accounts)
         self.pool.close()
         self.pool.join()
         while True:
             if int(self.savelive.qsize() + self.savedead.qsize() + self.savedead.qsize()) == 0:
                 break
-        print("[+] Worked Success")
+        # print("[+] Worked Success")
 
     def join(self):
         """ Stop the thread. """
         self._stopevent.set()
         for ths in self.threadPoints:
-            print("starting to join" + ths.getName())
+            # print("starting to join" + ths.getName())
             ths.join()
-            print(ths.getName() + " is: " + str(ths.isAlive()))
+            # print(ths.getName() + " is: " + str(ths.isAlive()))
 
     def save_dead(self):
         while not self._stopevent.isSet():
@@ -180,7 +180,7 @@ class Scrapper:
         global success_file_data
         success_file_data = Scrapper.get_successed(expire_time)
         data = None
-        print('[+]started')
+        # print('[+]started')
         if not os.path.exists(directorypath + file_ips):
             self.sources = self.DataUrls()
             data = self.GetData(urls=self.sources)
@@ -192,7 +192,7 @@ class Scrapper:
                 WriteFile(filename=file_ips, data=data)
             else:
                 data = ReadFile(filename=file_ips)
-        print('[+]done')
+        # print('[+]done')
         return data
 
     def DataUrls(self):
@@ -222,7 +222,7 @@ class Scrapper:
         IpList = []
         proxyFinder = self.RegProxy()
         for url in urls:
-            print("[+] Started to Download: " + url)
+            # print("[+] Started to Download: " + url)
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
                 'Accept': "application/json, text/javascript, */*; q=0.01",
@@ -235,11 +235,12 @@ class Scrapper:
             time.sleep(5)
             statuscode = response.status_code
             if statuscode == 200:
-                print("[+] Successfully Downloaded")
+                # print("[+] Successfully Downloaded")
                 data = self.Extract(response.text, proxyFinder)
                 IpList = IpList + data
             else:
-                print("[-] Got Problem with " + url)
+                pass
+                # print("[-] Got Problem with " + url)
 
         IpList = IpList + self.proxynova()
         IpList = list(dict.fromkeys(IpList))
@@ -286,7 +287,7 @@ class Scrapper:
         data_list = []
 
         for url in urls:
-            print("[+] Started to Download: " + url)
+            # print("[+] Started to Download: " + url)
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
             }
@@ -294,7 +295,7 @@ class Scrapper:
             time.sleep(2)
             statuscode = response.status_code
             if statuscode == 200:
-                print("[+] Successfully Downloaded")
+                # print("[+] Successfully Downloaded")
                 data_htmlip = self.Extract(response.text, reg_html)
                 temp_array = []
                 for i in range(0, len(data_htmlip), 2):
@@ -307,7 +308,8 @@ class Scrapper:
                                      )
                 print(data_list)
             else:
-                print("[-] Got Problem with " + url)
+                pass
+                # print("[-] Got Problem with " + url)
         return data_list
 
     @staticmethod
@@ -343,7 +345,7 @@ class Scrapper:
 def get_list(expire_time=1800):
     threads = []
     while not _stopevent.isSet():
-        print(time.ctime())
+        # print(time.ctime())
         scrapper = Scrapper(expire_time=expire_time)
         data = scrapper.init()
         Scrapper.data_checker(proxy_list=data)
@@ -368,7 +370,7 @@ def get_random_proxy():
         success["socks5"] = success_file_data["socks5"] + ip_list_bytype["socks5"]
 
     elif success and (len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"])):
-        print("waiting for success proxy output")
+        # print("waiting for success proxy output")
         return None
     elif len(ip_list_bytype["https"]) and len(ip_list_bytype["socks4"]) and len(ip_list_bytype["socks5"]):
         success = ip_list_bytype
@@ -378,11 +380,11 @@ def get_random_proxy():
             "http": None,
             "https": None,
         }
-        print("[-] Proxy is disabled. Waiting for data.")
+        # print("[-] Proxy is disabled. Waiting for data.")
         return proxy_dict
     else:
         checktype = random.choice(list(success.keys()))
-        print("checktype ->>>>>" + checktype)
+        # print("checktype ->>>>>" + checktype)
         if success[checktype]:
             proxy = random.choice(success[checktype])
             if checktype == 'http' or checktype == 'https':
