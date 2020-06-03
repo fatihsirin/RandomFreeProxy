@@ -1,7 +1,10 @@
 RandomFreeProxy
 --------
 
-RandomFreeProxy is an open source tool that asynchronously crawler public proxies from multiple sources and concurrently checks them.
+RandomFreeProxy is an open source tool that crawler public proxies from multiple sources and concurrently checks them
+and return proxy string.
+
+    {'http': 'http://104.248.63.15:30588', 'https': 'https://104.248.63.15:30588'}
 
 Features
 --------
