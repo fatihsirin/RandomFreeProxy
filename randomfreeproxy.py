@@ -47,7 +47,7 @@ class proxyChecker():
         self.proxylist = proxylist
         self.folder = "./"
         self.myip = str(get('http://api.ipify.org').text)
-        self.proxyjudge = 'http://ipinfo.io/ip'
+        self.proxyjudge = ['http://ipinfo.io/ip', 'https://ifconfig.me/ip','https://ipconfig.io/ip']
         self.checktype = checktype
         self.threadPoints = []
         self._stopevent = threading.Event()
@@ -96,7 +96,9 @@ class proxyChecker():
 
     def check_proxies(self, proxy):
         proxy_types = ["https", "socks4", "socks5"]
+        # print(proxy)
         for checktype in proxy_types:
+            time.sleep(0.5)
             proxy_dict = {}
             if proxy.count(':') == 3:
                 spl = proxy.split(':')
@@ -112,13 +114,17 @@ class proxyChecker():
                     'https': f'{checktype}://{proxy}'
                 }
             try:
-                r = get(url=self.proxyjudge, proxies=proxy_dict, timeout=10).text
+                r = get(url=random.choice(self.proxyjudge), proxies=proxy_dict, timeout=30).text
                 self.live += 1
                 self.savelive.put(proxy)
                 self.savelive.put([checktype,proxy])
             except (ConnectionError, SocketError, SSLError, MaxRetryError, ProxyError):
                 self.dead += 1
                 self.savedead.put(proxy)
+            except Exception as e:
+                time.sleep(5)
+
+
 
     def get_results(self):
         return self.listLive, self.listDead
@@ -306,7 +312,7 @@ class Scrapper:
                                      + ":" +
                                      str(self.Extract(iter, reg_port)[0]).rstrip().lstrip()
                                      )
-                print(data_list)
+                # print(data_list)
             else:
                 pass
                 # print("[-] Got Problem with " + url)

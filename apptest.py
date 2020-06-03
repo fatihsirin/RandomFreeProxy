@@ -13,5 +13,4 @@ while True:
     if r.status_code == 200:
         print("Request's IP Address: " + r.text)
         print("----------")
-
     time.sleep(5)
